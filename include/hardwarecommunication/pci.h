@@ -24,20 +24,25 @@ namespace oscpp
     namespace hardwarecommunication
     {
 
-        enum BaseAddressRegisterType
+        enum BaseAddressRegisterType//基址寄存器
         {
-            MemoryMapping = 0,
-            InputOutput = 1
+            MemoryMapping = 0,//系统软件需要在内存映射I/O空间中为该资源分配地址
+            InputOutput = 1//系统软件需要在I/O空间中为该资源分配地址
         };
-        
-        
-        
+             
+        // 基址寄存器的第 0 位用于表示 PCI 设备内部资源的类型。PCI 设备制造商在生产该设备时会根据实际情况配置该值。对于系统软件来说，该位是只读的。
+        // bit 0 = 1 :  系统软件需要在I/O空间中为该资源分配地址
+        // bit 0 = 0 :  系统软件需要在内存映射I/O空间中为该资源分配地址
+        // 两者分别简记为I/O类型和MMIO类型。如果资源是MMIO类型，则第1-3位有效。
+        // 前两位为：00表示系统软件需要为该资源分配一个32位的地址10表示系统软件需要为该资源分配一个64为的地址
+        // 如果需要分配64位的地址，相邻两个基址寄存器会合并成1个使用，后者保存64位地址的高32位。
+        // 第3位为：1 表示该资源是可预取的0 表示该资源是不可预取的
         class BaseAddressRegister//基址寄存器类
         {
         public:
             bool prefetchable;
-            oscpp::common::uint8_t* address;
-            oscpp::common::uint32_t size;
+            oscpp::common::uint8_t* address;//配置空间起始地址
+            oscpp::common::uint32_t size;//基址寄存器大小
             BaseAddressRegisterType type;
         };
         
@@ -81,13 +86,14 @@ namespace oscpp
              oscpp::common::uint32_t registeroffset);//访问配置空间
             void Write(oscpp::common::uint16_t bus, oscpp::common::uint16_t device, oscpp::common::uint16_t function, oscpp::common::uint32_t
              registeroffset, oscpp::common::uint32_t value);//数据写入配置空间
-            bool DeviceHasFunctions(oscpp::common::uint16_t bus, oscpp::common::uint16_t device);//判断设备是否存在功能
+            bool DeviceHasFunctions(oscpp::common::uint16_t bus, oscpp::common::uint16_t device);//判断设备是否存在多功能
             
+            //每个设备都有驱动，驱动都与中断相连
             void SelectDrivers(oscpp::drivers::DriverManager* driverManager, oscpp::hardwarecommunication::InterruptManager* interrupts);//扫描所有空间
             oscpp::drivers::Driver* GetDriver(PCIDeviceDescriptor dev, oscpp::hardwarecommunication::InterruptManager* interrupts);//获取设备对应驱动
             PCIDeviceDescriptor GetDeviceDescriptor(oscpp::common::uint16_t bus, oscpp::common::uint16_t device, oscpp::common::uint16_t function);//获取特定设备配置空间
             BaseAddressRegister GetBaseAddressRegister(oscpp::common::uint16_t bus, oscpp::common::uint16_t device,
-             oscpp::common::uint16_t function, oscpp::common::uint16_t bar);//
+             oscpp::common::uint16_t function, oscpp::common::uint16_t bar);//获取基址寄存器
         };
 
     }

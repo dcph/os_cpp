@@ -22,7 +22,7 @@ uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
     CPUState* cpu = (CPUState*)esp;
     
 
-    switch(cpu->eax)
+    switch(cpu->eax)//查看编号
     {
         case 4:
             printf((char*)cpu->ebx);

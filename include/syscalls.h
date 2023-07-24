@@ -1,4 +1,4 @@
- 
+//系统调用 
 #ifndef __OSCPP__SYSCALLS_H
 #define __OSCPP__SYSCALLS_H
 

@@ -6,8 +6,6 @@ using namespace oscpp::drivers;
 using namespace oscpp::hardwarecommunication;
 
 
-
-
 PCIDeviceDescriptor::PCIDeviceDescriptor()
 {
 }
@@ -15,11 +13,6 @@ PCIDeviceDescriptor::PCIDeviceDescriptor()
 PCIDeviceDescriptor::~PCIDeviceDescriptor()
 {
 }
-
-
-
-
-
 
 
 PCIController::PCIController()
@@ -42,6 +35,9 @@ uint32_t PCIController::Read(uint16_t bus, uint16_t device, uint16_t function, u
         | (registeroffset & 0xFC);
     commandPort.Write(id);
     uint32_t result = dataPort.Read();
+
+    //配置空间中每32位字段都存放在一个寄存器中，我们读取到的字段在寄存器中的偏移实际上是offset % 4
+    //为了获取32位的字段值中的8位，需要对这个寄存器中的值进行右移操作
     return result >> (8* (registeroffset % 4));
 }
 
@@ -56,7 +52,7 @@ void PCIController::Write(uint16_t bus, uint16_t device, uint16_t function, uint
     commandPort.Write(id);
     dataPort.Write(value); 
 }
-
+//关注HeaderType字段。如果第7为为1，那么该设备存在8个功能，否则它是一个单功能设备
 bool PCIController::DeviceHasFunctions(common::uint16_t bus, common::uint16_t device)
 {
     return Read(bus, device, 0, 0x0E) & (1<<7);
@@ -72,23 +68,23 @@ void PCIController::SelectDrivers(DriverManager* driverManager, oscpp::hardwarec
     {
         for(int device = 0; device < 32; device++)
         {
-            int numFunctions = DeviceHasFunctions(bus, device) ? 8 : 1;
+            int numFunctions = DeviceHasFunctions(bus, device) ? 8 : 1;//查看功能数量
             for(int function = 0; function < numFunctions; function++)
             {
                 PCIDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
                 
-                if(dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF)
+                if(dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF)//功能不存在
                     continue;
                 
                 
-                for(int barNum = 0; barNum < 6; barNum++)
+                for(int barNum = 0; barNum < 6; barNum++)//基址寄存器最多有6个
                 {
                     BaseAddressRegister bar = GetBaseAddressRegister(bus, device, function, barNum);
                     if(bar.address && (bar.type == InputOutput))
                         dev.portBase = (uint32_t)bar.address;
                 }
                 
-                Driver* driver = GetDriver(dev, interrupts);
+                Driver* driver = GetDriver(dev, interrupts);//将对应驱动加载到管理器
                 if(driver != 0)
                     driverManager->AddDriver(driver);
 
@@ -115,14 +111,14 @@ void PCIController::SelectDrivers(DriverManager* driverManager, oscpp::hardwarec
 }
 
 
-BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t device, uint16_t function, uint16_t bar)
+BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t device, uint16_t function, uint16_t bar)//从配置空间中读取寄存器相关配置信息
 {
     BaseAddressRegister result;
     
     
     uint32_t headertype = Read(bus, device, function, 0x0E) & 0x7F;
-    int maxBARs = 6 - (4*headertype);
-    if(bar >= maxBARs)
+    int maxBARs = 6 - (4*headertype);//找到最大寄存器编号
+    if(bar >= maxBARs)//返回空结果
         return result;
     
     

@@ -93,7 +93,7 @@ void printfHex32(uint32_t key)
 
 
 
-class PrintfKeyboardEventHandler : public KeyboardEventHandler
+class PrintfKeyboardEventHandler : public KeyboardEventHandler//打印键盘结果
 {
 public:
     void OnKeyDown(char c)
@@ -116,7 +116,7 @@ public:
         y = 12;
         VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0x0F00) << 4
                             | (VideoMemory[80*y+x] & 0xF000) >> 4
-                            | (VideoMemory[80*y+x] & 0x00FF);        
+                            | (VideoMemory[80*y+x] & 0x00FF); //所在位置内容不变，反色       
     }
     
     virtual void OnMouseMove(int xoffset, int yoffset)
@@ -127,7 +127,7 @@ public:
                             | (VideoMemory[80*y+x] & 0x00FF);
 
         x += xoffset;
-        if(x >= 80) x = 79;
+        if(x >= 80) x = 79;//防止越界
         if(x < 0) x = 0;
         y += yoffset;
         if(y >= 25) y = 24;
@@ -145,7 +145,7 @@ public:
 
 void sysprintf(char* str)
 {
-    asm("int $0x80" : : "a" (4), "b" (str));
+    asm("int $0x80" : : "a" (4), "b" (str));//中断指令，中断号为80
 }
 
 void taskA()
@@ -168,7 +168,7 @@ void taskB()
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
-extern "C" void callConstructors()
+extern "C" void callConstructors()//用于初始化.init_array段的变量
 {
     for(constructor* i = &start_ctors; i != &end_ctors; i++)
         (*i)();
@@ -176,16 +176,15 @@ extern "C" void callConstructors()
 
 
 
-extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
+extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)//用于接受eax和ebx中的数据
 {
     printf("os_cpp by dch\n");
 
     GDT gdt;
     
-    
-    uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);
-    size_t heap = 10*1024*1024;
-    MemoryManager memoryManager(heap, (*memupper)*1024 - heap - 10*1024);
+    uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);//起始地址为bootloader地址+8
+    size_t heap = 10*1024*1024;//堆大小
+    MemoryManager memoryManager(heap, (*memupper)*1024 - heap - 10*1024);//堆后是栈
     
     printf("heap: 0x");
     printfHex((heap >> 24) & 0xFF);
@@ -193,7 +192,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     printfHex((heap >> 8 ) & 0xFF);
     printfHex((heap      ) & 0xFF);
     
-    void* allocated = memoryManager.malloc(1024);
+    void* allocated = memoryManager.malloc(1024);//内存分配测试
     printf("\nallocated: 0x");
     printfHex(((size_t)allocated >> 24) & 0xFF);
     printfHex(((size_t)allocated >> 16) & 0xFF);
@@ -201,7 +200,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
     printfHex(((size_t)allocated      ) & 0xFF);
     printf("\n");
     
-    TaskManager taskManager;
+    TaskManager taskManager;//多任务测试
     Task task1(&gdt, taskA);
     Task task2(&gdt, taskB);
     taskManager.AddTask(&task1);
@@ -209,12 +208,12 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
 
     
     InterruptManager interrupts(0x20, &gdt, &taskManager);
-    SyscallHandler syscalls(&interrupts, 0x80);
+    SyscallHandler syscalls(&interrupts, 0x80);//设置syscall中断为80
     
     printf("Initializing Hardware, Stage 1\n");
     
     #ifdef GRAPHICSMODE
-        Desktop desktop(320,200, 0x00,0x00,0xA8);
+        Desktop desktop(320,200, 0x00,0x00,0xA8);//GUI测试
     #endif
     
     DriverManager drvManager;
@@ -223,7 +222,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
             KeyboardDriver keyboard(&interrupts, &desktop);
         #else
             PrintfKeyboardEventHandler kbhandler;
-            KeyboardDriver keyboard(&interrupts, &kbhandler);
+            KeyboardDriver keyboard(&interrupts, &kbhandler);//将键盘中断加入中断处理器
         #endif
         drvManager.AddDriver(&keyboard);
         
@@ -232,19 +231,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
             MouseDriver mouse(&interrupts, &desktop);
         #else
             MouseToConsole mousehandler;
-            MouseDriver mouse(&interrupts, &mousehandler);
+            MouseDriver mouse(&interrupts, &mousehandler);//将鼠标中断加入中断处理器
         #endif
         drvManager.AddDriver(&mouse);
         
         PCIController PCIController;
-        PCIController.SelectDrivers(&drvManager, &interrupts);
+        PCIController.SelectDrivers(&drvManager, &interrupts);//PCI加载所有驱动
 
         #ifdef GRAPHICSMODE
             VGA vga;
         #endif
         
     printf("Initializing Hardware, Stage 2\n");
-        drvManager.ActivateAll();
+        drvManager.ActivateAll();//启动所有驱动
         
     printf("Initializing Hardware, Stage 3\n");
 
@@ -256,36 +255,34 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_m
         desktop.AddChild(&win2);
     #endif
 
-
-    /*
-    printf("\nS-ATA primary master: ");
-    ATA ata0m(true, 0x1F0);
-    ata0m.Identify();
+    //磁盘检测
+    // printf("\nS-ATA primary master: ");
+    // ATA ata0m(true, 0x1F0);
+    // ata0m.Identify();
     
-    printf("\nS-ATA primary slave: ");
-    ATA ata0s(false, 0x1F0);
-    ata0s.Identify();
-    ata0s.Write28(0, (uint8_t*)"http://www.AlgorithMan.de", 25);
-    ata0s.Flush();
-    ata0s.Read28(0, 25);
+    // printf("\nS-ATA primary slave: ");
+    // ATA ata0s(false, 0x1F0);
+    // ata0s.Identify();
+    // ata0s.Write28(0, (uint8_t*)"oscpp", 25);
+    // ata0s.Flush();
+    // ata0s.Read28(0, 25);
     
-    printf("\nS-ATA secondary master: ");
-    ATA ata1m(true, 0x170);
-    ata1m.Identify();
+    // printf("\nS-ATA secondary master: ");
+    // ATA ata1m(true, 0x170);
+    // ata1m.Identify();
     
-    printf("\nS-ATA secondary slave: ");
-    ATA ata1s(false, 0x170);
-    ata1s.Identify();
-    // third: 0x1E8
-    // fourth: 0x168
-    */
+    // printf("\nS-ATA secondary slave: ");
+    // ATA ata1s(false, 0x170);
+    // ata1s.Identify();
+    // // third: 0x1E8
+    // // fourth: 0x168
     
     
-    amd_am79c973* eth0 = (amd_am79c973*)(drvManager.drivers[2]);
-    eth0->Send((uint8_t*)"Hello Network", 13);
+    amd_am79c973* eth0 = (amd_am79c973*)(drvManager.drivers[2]);//网络测试
+    eth0->Send((uint8_t*)"Hello World", 11);
         
 
-    interrupts.Activate();
+    interrupts.Activate();//启动中断
 
 
     while(1)

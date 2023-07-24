@@ -5,50 +5,50 @@ using namespace oscpp;
 using namespace oscpp::common;
 
 
-MemoryManager* MemoryManager::activeMemoryManager = 0;
+MemoryManager* MemoryManager::activeMemoryManager = nullptr;
         
 MemoryManager::MemoryManager(size_t start, size_t size)
 {
     activeMemoryManager = this;
     
-    if(size < sizeof(MemoryChunk))
+    if(size < sizeof(MemoryChunk))//内存大小小于链表表头大小，那么无法分配
     {
-        first = 0;
+        first = nullptr;
     }
     else
     {
         first = (MemoryChunk*)start;
         
         first -> allocated = false;
-        first -> prev = 0;
-        first -> next = 0;
-        first -> size = size - sizeof(MemoryChunk);
+        first -> prev = nullptr;
+        first -> next = nullptr;
+        first -> size = size - sizeof(MemoryChunk);//可用内存大小
     }
 }
 
 MemoryManager::~MemoryManager()
 {
     if(activeMemoryManager == this)
-        activeMemoryManager = 0;
+        activeMemoryManager = nullptr;
 }
-        
+//|链表指向位置，节点内存|返回位置，使用内存|节点内存|使用内存|        
 void* MemoryManager::malloc(size_t size)
 {
-    MemoryChunk *result = 0;
+    MemoryChunk *result = nullptr;
     
-    for(MemoryChunk* chunk = first; chunk != 0 && result == 0; chunk = chunk->next)
-        if(chunk->size > size && !chunk->allocated)
+    for(MemoryChunk* chunk = first; chunk != nullptr && result == nullptr; chunk = chunk->next)
+        if(chunk->size > size && !chunk->allocated)//分配足够大小内存
             result = chunk;
         
     if(result == 0)
         return 0;
     
-    if(result->size >= size + sizeof(MemoryChunk) + 1)
+    if(result->size >= size + sizeof(MemoryChunk) + 1)//分配内存过大
     {
         MemoryChunk* temp = (MemoryChunk*)((size_t)result + sizeof(MemoryChunk) + size);
         
         temp->allocated = false;
-        temp->size = result->size - size - sizeof(MemoryChunk);
+        temp->size = result->size - size - sizeof(MemoryChunk);//下一个空闲内存
         temp->prev = result;
         temp->next = result->next;
         if(temp->next != 0)
@@ -59,7 +59,7 @@ void* MemoryManager::malloc(size_t size)
     }
     
     result->allocated = true;
-    return (void*)(((size_t)result) + sizeof(MemoryChunk));
+    return (void*)(((size_t)result) + sizeof(MemoryChunk));//返回未使用内存部分
 }
 
 void MemoryManager::free(void* ptr)
@@ -68,7 +68,7 @@ void MemoryManager::free(void* ptr)
     
     chunk -> allocated = false;
     
-    if(chunk->prev != 0 && !chunk->prev->allocated)
+    if(chunk->prev != 0 && !chunk->prev->allocated)//查找前后是否有能合并的空间
     {
         chunk->prev->next = chunk->next;
         chunk->prev->size += chunk->size + sizeof(MemoryChunk);
