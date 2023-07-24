@@ -1,14 +1,14 @@
 #include <drivers/ata.h>
 
-using namespace myos;
-using namespace myos::common;
-using namespace myos::drivers;
+using namespace oscpp;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
 
 
 void printf(char* str);
 void printfHex(uint8_t);
 
-AdvancedTechnologyAttachment::AdvancedTechnologyAttachment(bool master, common::uint16_t portBase)
+ATA::ATA(bool master, common::uint16_t portBase)//初始化端口和
 :   dataPort(portBase),
     errorPort(portBase + 0x1),
     sectorCountPort(portBase + 0x2),
@@ -22,11 +22,11 @@ AdvancedTechnologyAttachment::AdvancedTechnologyAttachment(bool master, common::
     this->master = master;
 }
 
-AdvancedTechnologyAttachment::~AdvancedTechnologyAttachment()
+ATA::~ATA()
 {
 }
             
-void AdvancedTechnologyAttachment::Identify()
+void ATA::Identify()
 {
     devicePort.Write(master ? 0xA0 : 0xB0);
     controlPort.Write(0);
@@ -42,7 +42,7 @@ void AdvancedTechnologyAttachment::Identify()
     lbaLowPort.Write(0);
     lbaMidPort.Write(0);
     lbaHiPort.Write(0);
-    commandPort.Write(0xEC); // identify command
+    commandPort.Write(0xEC); // 识别命令
     
     
     status = commandPort.Read();
@@ -59,7 +59,7 @@ void AdvancedTechnologyAttachment::Identify()
         return;
     }
     
-    for(int i = 0; i < 256; i++)
+    for(int i = 0; i < 256; i++)//实际开始读数据，数据端口16位，所以是256
     {
         uint16_t data = dataPort.Read();
         char *text = "  \0";
@@ -70,7 +70,7 @@ void AdvancedTechnologyAttachment::Identify()
     printf("\n");
 }
 
-void AdvancedTechnologyAttachment::Read28(common::uint32_t sectorNum, int count)
+void ATA::Read28(common::uint32_t sectorNum, int count)
 {
     if(sectorNum > 0x0FFFFFFF)
         return;
@@ -116,7 +116,7 @@ void AdvancedTechnologyAttachment::Read28(common::uint32_t sectorNum, int count)
         dataPort.Read();
 }
 
-void AdvancedTechnologyAttachment::Write28(common::uint32_t sectorNum, common::uint8_t* data, common::uint32_t count)
+void ATA::Write28(common::uint32_t sectorNum, common::uint8_t* data, common::uint32_t count)
 {
     if(sectorNum > 0x0FFFFFFF)
         return;
@@ -153,7 +153,7 @@ void AdvancedTechnologyAttachment::Write28(common::uint32_t sectorNum, common::u
 
 }
 
-void AdvancedTechnologyAttachment::Flush()
+void ATA::Flush()
 {
     devicePort.Write( master ? 0xE0 : 0xF0 );
     commandPort.Write(0xE7);

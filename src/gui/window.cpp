@@ -1,15 +1,15 @@
  
 #include <gui/window.h>
 
-using namespace myos::common;
-using namespace myos::gui;
+using namespace oscpp::common;
+using namespace oscpp::gui;
 
 Window::Window(Widget* parent,
             common::int32_t x, common::int32_t y, common::int32_t w, common::int32_t h,
             common::uint8_t r, common::uint8_t g, common::uint8_t b)
 : CompositeWidget(parent, x,y,w,h, r,g,b)
 {
-    Dragging = false;
+    Dragging = false;//未牵引
 }
 
 Window::~Window()
@@ -18,7 +18,7 @@ Window::~Window()
 
 void Window::OnMouseDown(common::int32_t x, common::int32_t y, common::uint8_t button)
 {
-    Dragging = button == 1;
+    Dragging = button == 1;//在牵引
     CompositeWidget::OnMouseDown(x,y,button);
 }
 

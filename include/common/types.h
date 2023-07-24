@@ -1,12 +1,12 @@
-#ifndef __MYOS__COMMON__TYPES_H
-#define __MYOS__COMMON__TYPES_H
+#ifndef __OSCPP__COMMON__TYPES_H
+#define __OSCPP__COMMON__TYPES_H
 
-namespace myos
+namespace oscpp
 {
     namespace common
     {
 
-        typedef char                     int8_t;
+        typedef char                     int8_t; //用于统一标识，因为不同机子上int的长度不同
         typedef unsigned char           uint8_t;
         typedef short                   int16_t;
         typedef unsigned short         uint16_t;

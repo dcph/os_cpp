@@ -1,11 +1,11 @@
  
-#ifndef __MYOS__MEMORYMANAGEMENT_H
-#define __MYOS__MEMORYMANAGEMENT_H
+#ifndef __OSCPP__MEMORYMANAGEMENT_H
+#define __OSCPP__MEMORYMANAGEMENT_H
 
 #include <common/types.h>
 
 
-namespace myos
+namespace oscpp
 {
     
     struct MemoryChunk

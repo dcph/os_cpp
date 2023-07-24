@@ -15,7 +15,7 @@ SECTIONS
 
   .data  :
   {
-    start_ctors = .;
+    start_ctors = .;                                  #在链接器中设定初始化地址
     KEEP(*( .init_array ));
     KEEP(*(SORT_BY_INIT_PRIORITY( .init_array.* )));
     end_ctors = .;

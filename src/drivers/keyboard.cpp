@@ -1,9 +1,9 @@
-
+//键盘的操作是一个InterruptRoutine的子类，对应了键盘操作的中断服务例程
 #include <drivers/keyboard.h>
 
-using namespace myos::common;
-using namespace myos::drivers;
-using namespace myos::hardwarecommunication;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
+using namespace oscpp::hardwarecommunication;
 
 
 KeyboardEventHandler::KeyboardEventHandler()
@@ -22,10 +22,10 @@ void KeyboardEventHandler::OnKeyUp(char)
 
 
 
-KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
-: InterruptHandler(manager, 0x21),
-dataport(0x60),
-commandport(0x64)
+KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)//键盘驱动的构造函数
+: InterruptHandler(manager, 0x21),//键盘终端号
+dataport(0x60),//驱动中数据端口
+commandport(0x64)//驱动中命令端口
 {
     this->handler = handler;
 }
@@ -39,26 +39,26 @@ void printfHex(uint8_t);
 
 void KeyboardDriver::Activate()
 {
-    while(commandport.Read() & 0x1)
+    while(commandport.Read() & 0x1)//如果commandPort的最低位是1，则清除输出缓冲区
         dataport.Read();
-    commandport.Write(0xae); // activate interrupts
-    commandport.Write(0x20); // command 0x20 = read controller command byte
+    commandport.Write(0xae); // 开启键盘中断
+    commandport.Write(0x20); // 准备读取commandPort
     uint8_t status = (dataport.Read() | 1) & ~0x10;
-    commandport.Write(0x60); // command 0x60 = set controller command byte
-    dataport.Write(status);
-    dataport.Write(0xf4);
+    commandport.Write(0x60); //准备进行写入操作
+    dataport.Write(status);//写入status
+    dataport.Write(0xf4);//清空键盘输出缓冲区，可以继续扫描输入
 }
 
-uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)
+uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp)//中断处理程序，读取键盘的输入并显示在屏幕上
 {
-    uint8_t key = dataport.Read();
+    uint8_t key = dataport.Read();//每一个按键都有扫描码和断码
     
     if(handler == 0)
         return esp;
     
     if(key < 0x80)
     {
-        switch(key)
+        switch(key)//按照给出的结果进行判断
         {
             case 0x02: handler->OnKeyDown('1'); break;
             case 0x03: handler->OnKeyDown('2'); break;

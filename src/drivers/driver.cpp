@@ -1,6 +1,6 @@
 
 #include <drivers/driver.h>
-using namespace myos::drivers;
+using namespace oscpp::drivers;
  
 Driver::Driver()
 {

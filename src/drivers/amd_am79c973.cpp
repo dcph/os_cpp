@@ -1,14 +1,14 @@
 
 #include <drivers/amd_am79c973.h>
-using namespace myos;
-using namespace myos::common;
-using namespace myos::drivers;
-using namespace myos::hardwarecommunication;
+using namespace oscpp;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
+using namespace oscpp::hardwarecommunication;
 
  
 
 
-amd_am79c973::amd_am79c973(PeripheralComponentInterconnectDeviceDescriptor *dev, InterruptManager* interrupts)
+amd_am79c973::amd_am79c973(PCIDeviceDescriptor *dev, InterruptManager* interrupts)
 :   Driver(),
     InterruptHandler(interrupts, dev->interrupt + interrupts->HardwareInterruptOffset()),
     MACAddress0Port(dev->portBase),

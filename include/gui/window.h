@@ -1,11 +1,11 @@
  
-#ifndef __MYOS__GUI__WINDOW_H
-#define __MYOS__GUI__WINDOW_H
+#ifndef __OSCPP__GUI__WINDOW_H
+#define __OSCPP__GUI__WINDOW_H
 
 #include <gui/widget.h>
 #include <drivers/mouse.h>
 
-namespace myos
+namespace oscpp
 {
     namespace gui
     {
@@ -13,7 +13,7 @@ namespace myos
         class Window : public CompositeWidget
         { 
         protected:
-            bool Dragging;
+            bool Dragging;//牵引状态
             
         public:
             Window(Widget* parent,

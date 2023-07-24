@@ -1,9 +1,9 @@
 
 #include <syscalls.h>
  
-using namespace myos;
-using namespace myos::common;
-using namespace myos::hardwarecommunication;
+using namespace oscpp;
+using namespace oscpp::common;
+using namespace oscpp::hardwarecommunication;
  
 SyscallHandler::SyscallHandler(InterruptManager* interruptManager, uint8_t InterruptNumber)
 :    InterruptHandler(interruptManager, InterruptNumber  + interruptManager->HardwareInterruptOffset())

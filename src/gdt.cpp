@@ -1,84 +1,86 @@
 
 #include <gdt.h>
-using namespace myos;
-using namespace myos::common;
+using namespace oscpp;
+using namespace oscpp::common;
 
-
-GlobalDescriptorTable::GlobalDescriptorTable()
+//32位的线性地址和16位的边界，最大64kb的空间
+GDT::GDT()
     : nullSegmentSelector(0, 0, 0),
         unusedSegmentSelector(0, 0, 0),
         codeSegmentSelector(0, 64*1024*1024, 0x9A),
         dataSegmentSelector(0, 64*1024*1024, 0x92)
 {
-    uint32_t i[2];
-    i[1] = (uint32_t)this;
-    i[0] = sizeof(GlobalDescriptorTable) << 16;
-    asm volatile("lgdt (%0)": :"p" (((uint8_t *) i)+2));
+    uint32_t i[2];//GDTR需要信息
+    i[1] = (uint32_t)this;//当前地址，32位
+    i[0] = sizeof(GDT) << 16;//表长界限，16位
+    asm volatile("lgdt (%0)": :"p" (((uint8_t *) i)+2));//内联汇编，访问初始地址，lgdt指令将GDT的入口地址装入GDTR寄存器
 }
 
-GlobalDescriptorTable::~GlobalDescriptorTable()
+GDT::~GDT()
 {
 }
 
-uint16_t GlobalDescriptorTable::DataSegmentSelector()
+uint16_t GDT::DataSegmentSelector()
 {
     return (uint8_t*)&dataSegmentSelector - (uint8_t*)this;
 }
 
-uint16_t GlobalDescriptorTable::CodeSegmentSelector()
+uint16_t GDT::CodeSegmentSelector()
 {
     return (uint8_t*)&codeSegmentSelector - (uint8_t*)this;
 }
 
-GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t type)
+GDT::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t type)//基址base，32，段最大长度limit，20和段类型type
 {
-    uint8_t* target = (uint8_t*)this;
-
-    if (limit <= 65536)
+    // 获取全局描述符首地址
+    uint8_t *target = (uint8_t *)this;//8，因为头两个是16位
+    // 判断是否需要使用页作为最小单位
+    // 如果段的字节数不足65536，则最小单位是字节，否则为页
+    if (limit < 65536)
     {
-        // 16-bit address space
+        // 寻找到limit_hi字段
+        // 将最小单位设置为字节
+        // 使用32位段
         target[6] = 0x40;
     }
     else
     {
-        // 32-bit address space
-        // Now we have to squeeze the (32-bit) limit into 2.5 regiters (20-bit).
-        // This is done by discarding the 12 least significant bits, but this
-        // is only legal, if they are all ==1, so they are implicitly still there
-
-        // so if the last bits aren't all 1, we have to set them to 1, but this
-        // would increase the limit (cannot do that, because we might go beyond
-        // the physical limit or get overlap with other segments) so we have to
-        // compensate this by decreasing a higher bit (and might have up to
-        // 4095 wasted bytes behind the used memory)
-
-        if((limit & 0xFFF) != 0xFFF)
-            limit = (limit >> 12)-1;
+        // 32位地址空间。现在我们必须将（32位）限制压缩为2.5个寄存器（20位）。32位的空间转为20位，通过将最小的12位全部设置成1来解决，最小的12位就是页的内容
+        // 将最小单位设置为页
+        target[6] = 0xc0;
+        // 如果最后4KB不足则需要缺失一页
+        // 将limit转化为4KB的页面数
+        if ((limit & 0xfff) != 0xfff)
+            limit = (limit >> 12) - 1;
         else
             limit = limit >> 12;
-
-        target[6] = 0xC0;
     }
+    // 此时limit是20位的
+    // limit字段低8位取limit的后8位
+    target[0] = limit & 0xff;
+    // limit字段低16位的后8位
+    target[1] = (limit >> 8) & 0xff;
+    // limit字段高位
+    target[6] = (limit >> 16) & 0xf | 0xc0;
 
-    // Encode the limit
-    target[0] = limit & 0xFF;
-    target[1] = (limit >> 8) & 0xFF;
-    target[6] |= (limit >> 16) & 0xF;
+    // base字段低16位的前8位
+    target[2] = base & 0xff;
+    // base字段低16位的后8位
+    target[3] = (base >> 8) & 0xff;
+    // base字段的次高位
+    target[4] = (base >> 16) & 0xff; 
+    // base字段的最高位
+    target[7] = (base >> 24) & 0xff; 
 
-    // Encode the base
-    target[2] = base & 0xFF;
-    target[3] = (base >> 8) & 0xFF;
-    target[4] = (base >> 16) & 0xFF;
-    target[7] = (base >> 24) & 0xFF;
-
-    // Type
+    // type字段
     target[5] = type;
 }
 
-uint32_t GlobalDescriptorTable::SegmentDescriptor::Base()
+uint32_t GDT::SegmentDescriptor::Base()//找到base
 {
-    uint8_t* target = (uint8_t*)this;
-
+    // 获取当前对象的首地址
+    uint8_t *target = (uint8_t *)this;
+    // 从最高位开始获取，并进行左移
     uint32_t result = target[7];
     result = (result << 8) + target[4];
     result = (result << 8) + target[3];
@@ -87,7 +89,7 @@ uint32_t GlobalDescriptorTable::SegmentDescriptor::Base()
     return result;
 }
 
-uint32_t GlobalDescriptorTable::SegmentDescriptor::Limit()
+uint32_t GDT::SegmentDescriptor::Limit()//找到limit
 {
     uint8_t* target = (uint8_t*)this;
 

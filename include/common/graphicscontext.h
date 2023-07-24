@@ -1,13 +1,13 @@
-#ifndef __MYOS__COMMON__GRAPHICSCONTEXT_H
-#define __MYOS__COMMON__GRAPHICSCONTEXT_H
+#ifndef __OSCPP__COMMON__GRAPHICSCONTEXT_H
+#define __OSCPP__COMMON__GRAPHICSCONTEXT_H
 
 #include <drivers/vga.h>
 
-namespace myos
+namespace oscpp
 {
     namespace common
     {
-        typedef myos::drivers::VideoGraphicsArray GraphicsContext;
+        typedef oscpp::drivers::VGA GraphicsContext;//
     }
 }
 

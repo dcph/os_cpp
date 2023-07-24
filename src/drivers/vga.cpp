@@ -1,12 +1,12 @@
 
 #include <drivers/vga.h>
 
-using namespace myos::common;
-using namespace myos::drivers;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
 
            
             
-VideoGraphicsArray::VideoGraphicsArray() : 
+VGA::VGA() : 
     miscPort(0x3c2),
     crtcIndexPort(0x3d4),
     crtcDataPort(0x3d5),
@@ -21,13 +21,13 @@ VideoGraphicsArray::VideoGraphicsArray() :
 {
 }
 
-VideoGraphicsArray::~VideoGraphicsArray()
+VGA::~VGA()
 {
 }
 
 
             
-void VideoGraphicsArray::WriteRegisters(uint8_t* registers)
+void VGA::WriteRegisters(uint8_t* registers)
 {
     //  misc
     miscPort.Write(*(registers++));
@@ -39,7 +39,7 @@ void VideoGraphicsArray::WriteRegisters(uint8_t* registers)
         sequencerDataPort.Write(*(registers++));
     }
     
-    // cathode ray tube controller
+    // 阴极射线管控制器
     crtcIndexPort.Write(0x03);
     crtcDataPort.Write(crtcDataPort.Read() | 0x80);
     crtcIndexPort.Write(0x11);
@@ -54,14 +54,14 @@ void VideoGraphicsArray::WriteRegisters(uint8_t* registers)
         crtcDataPort.Write(*(registers++));
     }
     
-    // graphics controller
+    // 图形控制器
     for(uint8_t i = 0; i < 9; i++)
     {
         graphicsControllerIndexPort.Write(i);
         graphicsControllerDataPort.Write(*(registers++));
     }
     
-    // attribute controller
+    // 属性控制器
     for(uint8_t i = 0; i < 21; i++)
     {
         attributeControllerResetPort.Read();
@@ -74,12 +74,11 @@ void VideoGraphicsArray::WriteRegisters(uint8_t* registers)
     
 }
 
-bool VideoGraphicsArray::SupportsMode(uint32_t width, uint32_t height, uint32_t colordepth)
-{
+bool VGA::SupportsMode(uint32_t width, uint32_t height, uint32_t colordepth){//探测vga类型
     return width == 320 && height == 200 && colordepth == 8;
 }
 
-bool VideoGraphicsArray::SetMode(uint32_t width, uint32_t height, uint32_t colordepth)
+bool VGA::SetMode(uint32_t width, uint32_t height, uint32_t colordepth)//初始化vga
 {
     if(!SupportsMode(width, height, colordepth))
         return false;
@@ -109,10 +108,10 @@ bool VideoGraphicsArray::SetMode(uint32_t width, uint32_t height, uint32_t color
 }
 
 
-uint8_t* VideoGraphicsArray::GetFrameBufferSegment()
+uint8_t* VGA::GetFrameBufferSegment()//提供段偏移量
 {
     graphicsControllerIndexPort.Write(0x06);
-    uint8_t segmentNumber = graphicsControllerDataPort.Read() & (3<<2);
+    uint8_t segmentNumber = graphicsControllerDataPort.Read() & (3<<2);//获得段号
     switch(segmentNumber)
     {
         default:
@@ -123,17 +122,17 @@ uint8_t* VideoGraphicsArray::GetFrameBufferSegment()
     }
 }
             
-void VideoGraphicsArray::PutPixel(int32_t x, int32_t y,  uint8_t colorIndex)
+void VGA::PutPixel(int32_t x, int32_t y,  uint8_t colorIndex)
 {
     if(x < 0 || 320 <= x
     || y < 0 || 200 <= y)
-        return;
+        return;//越界
         
-    uint8_t* pixelAddress = GetFrameBufferSegment() + 320*y + x;
+    uint8_t* pixelAddress = GetFrameBufferSegment() + 320*y + x;//得到对应控制的像素地址
     *pixelAddress = colorIndex;
 }
 
-uint8_t VideoGraphicsArray::GetColorIndex(uint8_t r, uint8_t g, uint8_t b)
+uint8_t VGA::GetColorIndex(uint8_t r, uint8_t g, uint8_t b)//标准颜色索引
 {
     if(r == 0x00 && g == 0x00 && b == 0x00) return 0x00; // black
     if(r == 0x00 && g == 0x00 && b == 0xA8) return 0x01; // blue
@@ -143,12 +142,12 @@ uint8_t VideoGraphicsArray::GetColorIndex(uint8_t r, uint8_t g, uint8_t b)
     return 0x00;
 }
            
-void VideoGraphicsArray::PutPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b)
+void VGA::PutPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b)
 {
     PutPixel(x,y, GetColorIndex(r,g,b));
 }
 
-void VideoGraphicsArray::FillRectangle(uint32_t x, uint32_t y, uint32_t w, uint32_t h,   uint8_t r, uint8_t g, uint8_t b)
+void VGA::FillRectangle(uint32_t x, uint32_t y, uint32_t w, uint32_t h,   uint8_t r, uint8_t g, uint8_t b)//渲染图像
 {
     for(int32_t Y = y; Y < y+h; Y++)
         for(int32_t X = x; X < x+w; X++)

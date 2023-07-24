@@ -20,17 +20,17 @@
 // #define GRAPHICSMODE
 
 
-using namespace myos;
-using namespace myos::common;
-using namespace myos::drivers;
-using namespace myos::hardwarecommunication;
-using namespace myos::gui;
+using namespace oscpp;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
+using namespace oscpp::hardwarecommunication;
+using namespace oscpp::gui;
 
 
 
 void printf(char* str)
 {
-    static uint16_t* VideoMemory = (uint16_t*)0xb8000;
+    static uint16_t* VideoMemory = (uint16_t*)0xb8000;//显卡的调用地址
 
     static uint8_t x=0,y=0;
 
@@ -43,24 +43,27 @@ void printf(char* str)
                 y++;
                 break;
             default:
-                VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xFF00) | str[i];
+                VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xFF00) | str[i];//高四位是色彩，低四位是内容
                 x++;
                 break;
         }
 
-        if(x >= 80)
+        if(x >= 80)//重开一行
         {
             x = 0;
             y++;
         }
 
-        if(y >= 25)
+        if(y >= 25)//上移一行
         {
-            for(y = 0; y < 25; y++)
+            for(y = 0; y < 24; y++)
                 for(x = 0; x < 80; x++)
-                    VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xFF00) | ' ';
-            x = 0;
-            y = 0;
+                    VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xFF00) | (VideoMemory[80*(y+1)+x] & 0xFF);
+            VideoMemory[80*24] = (VideoMemory[80*24] & 0xFF00) | str[i];
+            for(x = 1; x < 80; x++)
+                 VideoMemory[80*24+x] = (VideoMemory[80*24+x] & 0xFF00) | ' ';
+            x = 1;
+            y = 24;
         }
     }
 }
@@ -173,11 +176,11 @@ extern "C" void callConstructors()
 
 
 
-extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
+extern "C" void kernelMain(const void* multiboot_structure, uint32_t multiboot_magic)
 {
-    printf("Hello World! --- http://www.AlgorithMan.de\n");
+    printf("os_cpp by dch\n");
 
-    GlobalDescriptorTable gdt;
+    GDT gdt;
     
     
     uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);
@@ -233,11 +236,11 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
         #endif
         drvManager.AddDriver(&mouse);
         
-        PeripheralComponentInterconnectController PCIController;
+        PCIController PCIController;
         PCIController.SelectDrivers(&drvManager, &interrupts);
 
         #ifdef GRAPHICSMODE
-            VideoGraphicsArray vga;
+            VGA vga;
         #endif
         
     printf("Initializing Hardware, Stage 2\n");
@@ -256,22 +259,22 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
 
     /*
     printf("\nS-ATA primary master: ");
-    AdvancedTechnologyAttachment ata0m(true, 0x1F0);
+    ATA ata0m(true, 0x1F0);
     ata0m.Identify();
     
     printf("\nS-ATA primary slave: ");
-    AdvancedTechnologyAttachment ata0s(false, 0x1F0);
+    ATA ata0s(false, 0x1F0);
     ata0s.Identify();
     ata0s.Write28(0, (uint8_t*)"http://www.AlgorithMan.de", 25);
     ata0s.Flush();
     ata0s.Read28(0, 25);
     
     printf("\nS-ATA secondary master: ");
-    AdvancedTechnologyAttachment ata1m(true, 0x170);
+    ATA ata1m(true, 0x170);
     ata1m.Identify();
     
     printf("\nS-ATA secondary slave: ");
-    AdvancedTechnologyAttachment ata1s(false, 0x170);
+    ATA ata1s(false, 0x170);
     ata1s.Identify();
     // third: 0x1E8
     // fourth: 0x168

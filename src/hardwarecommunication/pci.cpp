@@ -1,18 +1,18 @@
 #include <hardwarecommunication/pci.h>
 #include <drivers/amd_am79c973.h>
 
-using namespace myos::common;
-using namespace myos::drivers;
-using namespace myos::hardwarecommunication;
+using namespace oscpp::common;
+using namespace oscpp::drivers;
+using namespace oscpp::hardwarecommunication;
 
 
 
 
-PeripheralComponentInterconnectDeviceDescriptor::PeripheralComponentInterconnectDeviceDescriptor()
+PCIDeviceDescriptor::PCIDeviceDescriptor()
 {
 }
 
-PeripheralComponentInterconnectDeviceDescriptor::~PeripheralComponentInterconnectDeviceDescriptor()
+PCIDeviceDescriptor::~PCIDeviceDescriptor()
 {
 }
 
@@ -22,17 +22,17 @@ PeripheralComponentInterconnectDeviceDescriptor::~PeripheralComponentInterconnec
 
 
 
-PeripheralComponentInterconnectController::PeripheralComponentInterconnectController()
+PCIController::PCIController()
 : dataPort(0xCFC),
   commandPort(0xCF8)
 {
 }
 
-PeripheralComponentInterconnectController::~PeripheralComponentInterconnectController()
+PCIController::~PCIController()
 {
 }
 
-uint32_t PeripheralComponentInterconnectController::Read(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset)
+uint32_t PCIController::Read(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset)
 {
     uint32_t id =
         0x1 << 31
@@ -45,7 +45,7 @@ uint32_t PeripheralComponentInterconnectController::Read(uint16_t bus, uint16_t 
     return result >> (8* (registeroffset % 4));
 }
 
-void PeripheralComponentInterconnectController::Write(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset, uint32_t value)
+void PCIController::Write(uint16_t bus, uint16_t device, uint16_t function, uint32_t registeroffset, uint32_t value)
 {
     uint32_t id =
         0x1 << 31
@@ -57,7 +57,7 @@ void PeripheralComponentInterconnectController::Write(uint16_t bus, uint16_t dev
     dataPort.Write(value); 
 }
 
-bool PeripheralComponentInterconnectController::DeviceHasFunctions(common::uint16_t bus, common::uint16_t device)
+bool PCIController::DeviceHasFunctions(common::uint16_t bus, common::uint16_t device)
 {
     return Read(bus, device, 0, 0x0E) & (1<<7);
 }
@@ -66,7 +66,7 @@ bool PeripheralComponentInterconnectController::DeviceHasFunctions(common::uint1
 void printf(char* str);
 void printfHex(uint8_t);
 
-void PeripheralComponentInterconnectController::SelectDrivers(DriverManager* driverManager, myos::hardwarecommunication::InterruptManager* interrupts)
+void PCIController::SelectDrivers(DriverManager* driverManager, oscpp::hardwarecommunication::InterruptManager* interrupts)
 {
     for(int bus = 0; bus < 8; bus++)
     {
@@ -75,7 +75,7 @@ void PeripheralComponentInterconnectController::SelectDrivers(DriverManager* dri
             int numFunctions = DeviceHasFunctions(bus, device) ? 8 : 1;
             for(int function = 0; function < numFunctions; function++)
             {
-                PeripheralComponentInterconnectDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
+                PCIDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
                 
                 if(dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF)
                     continue;
@@ -115,7 +115,7 @@ void PeripheralComponentInterconnectController::SelectDrivers(DriverManager* dri
 }
 
 
-BaseAddressRegister PeripheralComponentInterconnectController::GetBaseAddressRegister(uint16_t bus, uint16_t device, uint16_t function, uint16_t bar)
+BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t device, uint16_t function, uint16_t bar)
 {
     BaseAddressRegister result;
     
@@ -157,7 +157,7 @@ BaseAddressRegister PeripheralComponentInterconnectController::GetBaseAddressReg
 
 
 
-Driver* PeripheralComponentInterconnectController::GetDriver(PeripheralComponentInterconnectDeviceDescriptor dev, InterruptManager* interrupts)
+Driver* PCIController::GetDriver(PCIDeviceDescriptor dev, InterruptManager* interrupts)
 {
     Driver* driver = 0;
     switch(dev.vendor_id)
@@ -198,9 +198,9 @@ Driver* PeripheralComponentInterconnectController::GetDriver(PeripheralComponent
 
 
 
-PeripheralComponentInterconnectDeviceDescriptor PeripheralComponentInterconnectController::GetDeviceDescriptor(uint16_t bus, uint16_t device, uint16_t function)
+PCIDeviceDescriptor PCIController::GetDeviceDescriptor(uint16_t bus, uint16_t device, uint16_t function)
 {
-    PeripheralComponentInterconnectDeviceDescriptor result;
+    PCIDeviceDescriptor result;
     
     result.bus = bus;
     result.device = device;

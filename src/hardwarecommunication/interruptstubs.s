@@ -1,23 +1,23 @@
 
 
-.set IRQ_BASE, 0x20
+.set IRQ_BASE, 0x20     #中断编号从20开始
 
 .section .text
 
-.extern _ZN4myos21hardwarecommunication16InterruptManager15HandleInterruptEhj
+.extern _ZN4oscpp21hardwarecommunication16InterruptManager15HandleInterruptEhj
 
-
-.macro HandleException num
-.global _ZN4myos21hardwarecommunication16InterruptManager19HandleException\num\()Ev
-_ZN4myos21hardwarecommunication16InterruptManager19HandleException\num\()Ev:
-    movb $\num, (interruptnumber)
-    jmp int_bottom
+#宏定义
+.macro HandleException num  #形参
+.global _ZN4oscpp21hardwarecommunication16InterruptManager19HandleException\num\()Ev      #将代码对外发布
+_ZN4oscpp21hardwarecommunication16InterruptManager19HandleException\num\()Ev:             #代码段
+    movb $\num, (interruptnumber)  #加载异常号
+    jmp int_bottom  #进入处理程序
 .endm
 
 
 .macro HandleInterruptRequest num
-.global _ZN4myos21hardwarecommunication16InterruptManager26HandleInterruptRequest\num\()Ev
-_ZN4myos21hardwarecommunication16InterruptManager26HandleInterruptRequest\num\()Ev:
+.global _ZN4oscpp21hardwarecommunication16InterruptManager26HandleInterruptRequest\num\()Ev
+_ZN4oscpp21hardwarecommunication16InterruptManager26HandleInterruptRequest\num\()Ev:
     movb $\num + IRQ_BASE, (interruptnumber)
     pushl $0
     jmp int_bottom
@@ -68,7 +68,7 @@ HandleInterruptRequest 0x80
 
 int_bottom:
 
-    # save registers
+    # 保存寄存器
     #pusha
     #pushl %ds
     #pushl %es
@@ -84,18 +84,18 @@ int_bottom:
     pushl %ebx
     pushl %eax
 
-    # load ring 0 segment register
+    # 加载寄存器
     #cld
     #mov $0x10, %eax
     #mov %eax, %eds
     #mov %eax, %ees
 
-    # call C++ Handler
+    # 调用c++函数
     pushl %esp
     push (interruptnumber)
-    call _ZN4myos21hardwarecommunication16InterruptManager15HandleInterruptEhj
+    call _ZN4oscpp21hardwarecommunication16InterruptManager15HandleInterruptEhj
     #add %esp, 6
-    mov %eax, %esp # switch the stack
+    mov %eax, %esp # 堆栈切换
 
     # restore registers
     popl %eax
@@ -114,11 +114,11 @@ int_bottom:
     
     add $4, %esp
 
-.global _ZN4myos21hardwarecommunication16InterruptManager15InterruptIgnoreEv
-_ZN4myos21hardwarecommunication16InterruptManager15InterruptIgnoreEv:
+.global _ZN4oscpp21hardwarecommunication16InterruptManager15InterruptIgnoreEv
+_ZN4oscpp21hardwarecommunication16InterruptManager15InterruptIgnoreEv:
 
-    iret
+    iret #结束
 
 
-.data
+.data  
     interruptnumber: .byte 0

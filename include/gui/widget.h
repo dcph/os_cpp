@@ -1,18 +1,18 @@
  
-#ifndef __MYOS__GUI__WIDGET_H
-#define __MYOS__GUI__WIDGET_H
+#ifndef __OSCPP__GUI__WIDGET_H
+#define __OSCPP__GUI__WIDGET_H
 
 
 #include <common/types.h>
 #include <common/graphicscontext.h>
 #include <drivers/keyboard.h>
 
-namespace myos
+namespace oscpp
 {
     namespace gui
     {
         
-        class Widget : public myos::drivers::KeyboardEventHandler
+        class Widget : public oscpp::drivers::KeyboardEventHandler//小窗口
         {
         protected:
             Widget* parent;
@@ -33,18 +33,19 @@ namespace myos
                    common::uint8_t r, common::uint8_t g, common::uint8_t b);
             ~Widget();
             
-            virtual void GetFocus(Widget* widget);
+            virtual void GetFocus(Widget* widget);//得到注视点
             virtual void ModelToScreen(common::int32_t &x, common::int32_t& y);
             virtual bool ContainsCoordinate(common::int32_t x, common::int32_t y);
             
             virtual void Draw(common::GraphicsContext* gc);
+
             virtual void OnMouseDown(common::int32_t x, common::int32_t y, common::uint8_t button);
             virtual void OnMouseUp(common::int32_t x, common::int32_t y, common::uint8_t button);
             virtual void OnMouseMove(common::int32_t oldx, common::int32_t oldy, common::int32_t newx, common::int32_t newy);
         };
         
         
-        class CompositeWidget : public Widget
+        class CompositeWidget : public Widget//复合窗口
         {
         private:
             Widget* children[100];

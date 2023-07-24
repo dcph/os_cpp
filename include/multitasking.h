@@ -1,14 +1,14 @@
- 
-#ifndef __MYOS__MULTITASKING_H
-#define __MYOS__MULTITASKING_H
+ //多任务处理
+#ifndef __OSCPP__MULTITASKING_H
+#define __OSCPP__MULTITASKING_H
 
 #include <common/types.h>
 #include <gdt.h>
 
-namespace myos
+namespace oscpp
 {
     
-    struct CPUState
+    struct CPUState //记录cpu中寄存器的状态
     {
         common::uint32_t eax;
         common::uint32_t ebx;
@@ -18,13 +18,10 @@ namespace myos
         common::uint32_t esi;
         common::uint32_t edi;
         common::uint32_t ebp;
-
-        /*
-        common::uint32_t gs;
-        common::uint32_t fs;
-        common::uint32_t es;
-        common::uint32_t ds;
-        */
+        // common::uint32_t gs;
+        // common::uint32_t fs;
+        // common::uint32_t es;
+        // common::uint32_t ds;
         common::uint32_t error;
 
         common::uint32_t eip;
@@ -35,22 +32,22 @@ namespace myos
     } __attribute__((packed));
     
     
-    class Task
+    class Task//任务类
     {
     friend class TaskManager;
     private:
-        common::uint8_t stack[4096]; // 4 KiB
+        common::uint8_t stack[4096]; //栈大小，4MB
         CPUState* cpustate;
     public:
-        Task(GlobalDescriptorTable *gdt, void entrypoint());
+        Task(GDT *gdt, void entrypoint());
         ~Task();
     };
     
     
-    class TaskManager
+    class TaskManager//任务管理类
     {
     private:
-        Task* tasks[256];
+        Task* tasks[256];//最多256个任务
         int numTasks;
         int currentTask;
     public:

@@ -1,8 +1,8 @@
  
 #include <memorymanagement.h>
 
-using namespace myos;
-using namespace myos::common;
+using namespace oscpp;
+using namespace oscpp::common;
 
 
 MemoryManager* MemoryManager::activeMemoryManager = 0;
@@ -93,16 +93,16 @@ void MemoryManager::free(void* ptr)
 
 void* operator new(unsigned size)
 {
-    if(myos::MemoryManager::activeMemoryManager == 0)
+    if(oscpp::MemoryManager::activeMemoryManager == 0)
         return 0;
-    return myos::MemoryManager::activeMemoryManager->malloc(size);
+    return oscpp::MemoryManager::activeMemoryManager->malloc(size);
 }
 
 void* operator new[](unsigned size)
 {
-    if(myos::MemoryManager::activeMemoryManager == 0)
+    if(oscpp::MemoryManager::activeMemoryManager == 0)
         return 0;
-    return myos::MemoryManager::activeMemoryManager->malloc(size);
+    return oscpp::MemoryManager::activeMemoryManager->malloc(size);
 }
 
 void* operator new(unsigned size, void* ptr)
@@ -117,12 +117,12 @@ void* operator new[](unsigned size, void* ptr)
 
 void operator delete(void* ptr)
 {
-    if(myos::MemoryManager::activeMemoryManager != 0)
-        myos::MemoryManager::activeMemoryManager->free(ptr);
+    if(oscpp::MemoryManager::activeMemoryManager != 0)
+        oscpp::MemoryManager::activeMemoryManager->free(ptr);
 }
 
 void operator delete[](void* ptr)
 {
-    if(myos::MemoryManager::activeMemoryManager != 0)
-        myos::MemoryManager::activeMemoryManager->free(ptr);
+    if(oscpp::MemoryManager::activeMemoryManager != 0)
+        oscpp::MemoryManager::activeMemoryManager->free(ptr);
 }

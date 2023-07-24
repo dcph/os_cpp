@@ -1,8 +1,8 @@
  
 #include <gui/widget.h>
 
-using namespace myos::common;
-using namespace myos::gui;
+using namespace oscpp::common;
+using namespace oscpp::gui;
 
 
 Widget::Widget(Widget* parent, int32_t x, int32_t y, int32_t w, int32_t h,
@@ -43,7 +43,7 @@ void Widget::Draw(GraphicsContext* gc)
     int X = 0;
     int Y = 0;
     ModelToScreen(X,Y);
-    gc->FillRectangle(X,Y,w,h, r,g,b);
+    gc->FillRectangle(X,Y,w,h, r,g,b);//渲染
 }
 
 void Widget::OnMouseDown(common::int32_t x, common::int32_t y, common::uint8_t button)

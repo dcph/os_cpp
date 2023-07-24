@@ -1,13 +1,13 @@
 
 #include <multitasking.h>
 
-using namespace myos;
-using namespace myos::common;
+using namespace oscpp;
+using namespace oscpp::common;
 
 
-Task::Task(GlobalDescriptorTable *gdt, void entrypoint())
+Task::Task(GDT *gdt, void entrypoint())
 {
-    cpustate = (CPUState*)(stack + 4096 - sizeof(CPUState));
+    cpustate = (CPUState*)(stack + 4096 - sizeof(CPUState));//找到新的4mb存放任务
     
     cpustate -> eax = 0;
     cpustate -> ebx = 0;
@@ -18,18 +18,8 @@ Task::Task(GlobalDescriptorTable *gdt, void entrypoint())
     cpustate -> edi = 0;
     cpustate -> ebp = 0;
     
-    /*
-    cpustate -> gs = 0;
-    cpustate -> fs = 0;
-    cpustate -> es = 0;
-    cpustate -> ds = 0;
-    */
-    
-    // cpustate -> error = 0;    
-   
-    // cpustate -> esp = ;
-    cpustate -> eip = (uint32_t)entrypoint;
-    cpustate -> cs = gdt->CodeSegmentSelector();
+    cpustate -> eip = (uint32_t)entrypoint;//记录程序入口
+    cpustate -> cs = gdt->CodeSegmentSelector();//代码段偏移量
     // cpustate -> ss = ;
     cpustate -> eflags = 0x202;
     
@@ -60,15 +50,15 @@ bool TaskManager::AddTask(Task* task)
 
 CPUState* TaskManager::Schedule(CPUState* cpustate)
 {
-    if(numTasks <= 0)
+    if(numTasks <= 0)//没有任务
         return cpustate;
     
-    if(currentTask >= 0)
-        tasks[currentTask]->cpustate = cpustate;
+    if(currentTask >= 0)//存在当前任务
+        tasks[currentTask]->cpustate = cpustate;//记录当前任务状态
     
-    if(++currentTask >= numTasks)
+    if(++currentTask >= numTasks)//任务切换
         currentTask %= numTasks;
-    return tasks[currentTask]->cpustate;
+    return tasks[currentTask]->cpustate;//切换到下一任务状态
 }
 
     

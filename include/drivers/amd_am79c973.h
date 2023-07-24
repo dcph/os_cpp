@@ -1,6 +1,6 @@
- 
-#ifndef __MYOS__DRIVERS__AMD_AM79C973_H
-#define __MYOS__DRIVERS__AMD_AM79C973_H
+//网卡驱动器
+#ifndef __OSCPP__DRIVERS__AMD_AM79C973_H
+#define __OSCPP__DRIVERS__AMD_AM79C973_H
 
 
 #include <common/types.h>
@@ -10,14 +10,14 @@
 #include <hardwarecommunication/port.h>
 
 
-namespace myos
+namespace oscpp
 {
     namespace drivers
     {
         
         class amd_am79c973 : public Driver, public hardwarecommunication::InterruptHandler
         {
-            struct InitializationBlock
+            struct InitializationBlock//初始化块信息
             {
                 common::uint16_t mode;
                 unsigned reserved1 : 4;
@@ -32,7 +32,7 @@ namespace myos
             } __attribute__((packed));
             
             
-            struct BufferDescriptor
+            struct BufferDescriptor//缓冲区描述符
             {
                 common::uint32_t address;
                 common::uint32_t flags;
@@ -63,8 +63,8 @@ namespace myos
             
             
         public:
-            amd_am79c973(myos::hardwarecommunication::PeripheralComponentInterconnectDeviceDescriptor *dev,
-                         myos::hardwarecommunication::InterruptManager* interrupts);
+            amd_am79c973(oscpp::hardwarecommunication::PCIDeviceDescriptor *dev,
+                         oscpp::hardwarecommunication::InterruptManager* interrupts);
             ~amd_am79c973();
             
             void Activate();
